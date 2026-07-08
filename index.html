@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Ledger — Family Gift Registry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<style>
+  :root{
+    --pine:#16332A;
+    --pine-deep:#0D211B;
+    --gold:#C79A3D;
+    --gold-light:#E4C880;
+    --paper:#F3EEE2;
+    --paper-card:#FBF8F1;
+    --berry:#8C2F39;
+    --ink:#20241F;
+    --ink-soft:#5B6259;
+    --line:#D8CFB8;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";
+    position:fixed;inset:0;
+    background-image:radial-gradient(circle at 1px 1px, rgba(22,51,42,0.06) 1px, transparent 0);
+    background-size:18px 18px;
+    pointer-events:none;
+    z-index:0;
+  }
+  #app{position:relative;z-index:1;max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:40px;}
+
+  h1,h2,h3{font-family:'Fraunces',serif;margin:0;letter-spacing:-0.01em;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--gold);
+    font-weight:600;
+  }
+  button{font-family:inherit;cursor:pointer;}
+  input,select{font-family:inherit;}
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    background:var(--pine);
+    color:var(--paper);
+    padding:22px 20px 26px;
+    border-bottom-left-radius:22px;
+    border-bottom-right-radius:22px;
+    position:relative;
+    overflow:hidden;
+  }
+  .topbar::after{
+    content:"";
+    position:absolute;
+    right:-30px;top:-30px;
+    width:140px;height:140px;
+    border:1px dashed rgba(228,200,128,0.35);
+    border-radius:50%;
+  }
+  .topbar .eyebrow{color:var(--gold-light);}
+  .topbar h1{font-size:26px;color:var(--paper);margin-top:4px;}
+  .code-pill{
+    display:inline-flex;align-items:center;gap:8px;
+    margin-top:14px;
+    background:rgba(243,238,226,0.08);
+    border:1px solid rgba(228,200,128,0.4);
+    padding:8px 14px;
+    border-radius:999px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    letter-spacing:0.06em;
+  }
+  .code-pill b{color:var(--gold-light);letter-spacing:0.14em;}
+  .code-pill button{
+    background:none;border:none;color:var(--paper);opacity:0.75;
+    font-size:12px;text-decoration:underline;padding:0;
+  }
+
+  /* ---------- Screens ---------- */
+  .screen{padding:20px;}
+  .center-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .card{
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px;
+  }
+  .stack{display:flex;flex-direction:column;gap:14px;}
+
+  .field label{
+    display:block;font-size:12px;font-weight:600;color:var(--ink-soft);
+    margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;
+  }
+  .field input{
+    width:100%;padding:12px 14px;border-radius:10px;
+    border:1.5px solid var(--line);background:#fff;font-size:16px;color:var(--ink);
+  }
+  .field input:focus{outline:none;border-color:var(--gold);}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:13px 18px;border-radius:10px;border:none;
+    font-size:15px;font-weight:600;width:100%;
+  }
+  .btn-primary{background:var(--pine);color:var(--paper);}
+  .btn-primary:active{background:var(--pine-deep);}
+  .btn-gold{background:var(--gold);color:var(--pine-deep);}
+  .btn-ghost{background:transparent;color:var(--pine);border:1.5px solid var(--line);}
+  .btn-berry{background:var(--berry);color:#fff;}
+  .btn:disabled{opacity:0.5;}
+
+  .tab-toggle{display:flex;gap:8px;margin-bottom:18px;}
+  .tab-toggle button{
+    flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--line);
+    background:var(--paper-card);color:var(--ink-soft);font-weight:600;font-size:14px;
+  }
+  .tab-toggle button.active{background:var(--pine);color:var(--paper);border-color:var(--pine);}
+
+  /* ---------- Member rail ---------- */
+  .member-rail{
+    display:flex;gap:8px;overflow-x:auto;padding:16px 20px 4px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .member-chip{
+    flex:0 0 auto;
+    padding:9px 16px;border-radius:999px;
+    background:var(--paper-card);border:1.5px solid var(--line);
+    font-size:13.5px;font-weight:600;color:var(--ink-soft);white-space:nowrap;
+  }
+  .member-chip.active{background:var(--gold);border-color:var(--gold);color:var(--pine-deep);}
+
+  .section-head{
+    display:flex;align-items:baseline;justify-content:space-between;
+    padding:16px 20px 8px;
+  }
+  .section-head h2{font-size:19px;}
+  .section-head span{font-size:12px;color:var(--ink-soft);}
+
+  /* ---------- Gift tag card ---------- */
+  .tag-list{padding:0 20px;display:flex;flex-direction:column;gap:12px;}
+  .tag{
+    position:relative;
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 16px 14px 22px;
+    display:flex;flex-direction:column;gap:6px;
+  }
+  .tag::before{
+    content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;
+    background:var(--gold);border-radius:0 3px 3px 0;
+  }
+  .tag.reserved::before{background:var(--berry);}
+  .tag-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .tag-name{font-family:'Fraunces',serif;font-weight:600;font-size:17px;line-height:1.25;}
+  .tag-price{
+    font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--pine);
+    white-space:nowrap;font-weight:600;
+  }
+  .tag-meta{font-size:12.5px;color:var(--ink-soft);}
+  .tag-stores{font-size:12.5px;color:var(--ink-soft);}
+  .tag-stores b{color:var(--ink);font-weight:600;}
+  .tag-actions{display:flex;gap:8px;margin-top:6px;}
+  .tag-actions button{
+    flex:1;padding:8px;border-radius:8px;font-size:12.5px;font-weight:600;border:1.5px solid var(--line);
+    background:#fff;color:var(--ink-soft);
+  }
+  .tag-actions .claim{background:var(--pine);color:var(--paper);border-color:var(--pine);}
+  .tag-actions .unclaim{background:var(--berry);color:#fff;border-color:var(--berry);}
+  .reserved-note{
+    font-size:12px;color:var(--berry);font-weight:600;
+    display:flex;align-items:center;gap:6px;
+  }
+  .empty{
+    text-align:center;padding:40px 20px;color:var(--ink-soft);
+  }
+  .empty .glyph{font-size:32px;margin-bottom:8px;display:block;}
+
+  /* ---------- Floating scan button ---------- */
+  .fab-row{
+    position:sticky;bottom:0;left:0;right:0;
+    padding:14px 20px 22px;
+    background:linear-gradient(to top, var(--paper) 60%, transparent);
+    display:flex;gap:10px;
+  }
+  .fab{
+    flex:1;padding:15px;border-radius:12px;border:none;font-weight:700;font-size:15px;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(13,33,27,0.55);
+    display:flex;align-items:flex-end;justify-content:center;z-index:50;
+  }
+  .modal{
+    background:var(--paper);width:100%;max-width:520px;
+    border-top-left-radius:20px;border-top-right-radius:20px;
+    padding:22px 20px 28px;max-height:88vh;overflow-y:auto;
+  }
+  .modal h3{font-size:20px;margin-bottom:4px;}
+  .modal .sub{font-size:13px;color:var(--ink-soft);margin-bottom:16px;}
+  #qr-reader{border-radius:12px;overflow:hidden;border:1.5px solid var(--line);}
+  #qr-reader video{border-radius:12px;}
+  .close-x{
+    position:absolute;top:16px;right:16px;background:none;border:none;
+    font-size:20px;color:var(--ink-soft);
+  }
+  .scan-status{
+    font-size:13px;color:var(--ink-soft);text-align:center;padding:10px 0;
+  }
+  .demo-flag{
+    font-size:11.5px;color:var(--ink-soft);background:rgba(199,154,61,0.15);
+    border:1px solid rgba(199,154,61,0.4);padding:8px 10px;border-radius:8px;margin-top:4px;
+  }
+  .divider-or{
+    display:flex;align-items:center;gap:10px;color:var(--ink-soft);font-size:12px;margin:4px 0;
+  }
+  .divider-or::before,.divider-or::after{content:"";flex:1;height:1px;background:var(--line);}
+  a.linklike{color:var(--pine);font-weight:600;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* =========================================================================
+   LEDGER — a shared family gift-registry prototype.
+
+   Data model (stored via window.storage):
+   - Personal (per-device, shared=false): "profile" -> {name, householdCode}
+   - Shared (visible to anyone with the household code), namespaced by code:
+       hh:<CODE>:meta     -> {createdAt}
+       hh:<CODE>:members  -> [{id, name}]
+       hh:<CODE>:items    -> [{id, ownerId, ownerName, name, barcode,
+                               priceLow, priceHigh, stores:[...], addedAt,
+                               reservedBy, reservedByName}]
+
+   NOTE ON REALISM: real barcode -> live product/price data would need a
+   licensed product database + retail pricing API. This prototype simulates
+   that lookup with a small local demo catalog and clearly-labeled estimated
+   pricing, so the flow (scan -> confirm -> shared list -> claim) is real
+   and testable end-to-end even though the price data is not.
+   ========================================================================= */
+
+const state = {
+  profile: null,       // {name, id, householdCode}
+  members: [],
+  items: [],
+  activeMemberId: null,
+  scanner: null,
+};
+
+const root = document.getElementById('app');
+
+// ---- tiny demo product catalog (keyed by literal scanned barcode string) ----
+const DEMO_CATALOG = {
+  "012345678905": { name: "Wireless Earbuds", low: 39, high: 79, stores: ["Target", "Best Buy", "Amazon"] },
+  "036000291452": { name: "Building Block Set", low: 25, high: 60, stores: ["Target", "Walmart"] },
+  "049000028911": { name: "Board Game — Family Pack", low: 20, high: 45, stores: ["Target", "Barnes & Noble"] },
+  "078742231148": { name: "Hardcover Novel", low: 15, high: 28, stores: ["Barnes & Noble", "Amazon"] },
+  "030945044434": { name: "Skincare Gift Set", low: 30, high: 65, stores: ["Ulta", "Sephora"] },
+};
+const STORE_POOL = ["Target","Walmart","Best Buy","Amazon","Barnes & Noble","Ulta","Local shop"];
+
+function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h*31 + s.charCodeAt(i))|0; } return Math.abs(h); }
+
+function estimateFromName(name, barcode){
+  const seed = hashStr(name + (barcode||''));
+  const base = 12 + (seed % 60);
+  const low = base;
+  const high = Math.round(base * (1.25 + (seed % 10)/20));
+  const s1 = STORE_POOL[seed % STORE_POOL.length];
+  const s2 = STORE_POOL[(seed+3) % STORE_POOL.length];
+  const stores = s1===s2 ? [s1] : [s1,s2];
+  return { low, high, stores };
+}
+
+// Rough grocery price bands by category, so estimates are at least in the
+// right neighborhood for the *type* of product instead of pure noise.
+// Order matters — first match wins, so more specific categories go first.
+const CATEGORY_PRICE_BANDS = [
+  { match: /baby-food|baby-milk|infant/, low: 6,  high: 18, stores: ["Target","Walmart"] },
+  { match: /pet-food|cat-food|dog-food/, low: 5,  high: 22, stores: ["Petco","Walmart","Amazon"] },
+  { match: /seafood|fish/,               low: 6,  high: 18, stores: ["Whole Foods","Kroger"] },
+  { match: /meat|poultry|sausage/,       low: 5,  high: 16, stores: ["Kroger","Walmart"] },
+  { match: /cheese|dairy|yogurt|milk/,   low: 3,  high: 9,  stores: ["Kroger","Trader Joe's"] },
+  { match: /frozen/,                     low: 4,  high: 11, stores: ["Walmart","Kroger"] },
+  { match: /confectionery|chocolate|candy/, low: 2, high: 7, stores: ["Target","Walgreens"] },
+  { match: /snack|chip|cracker/,         low: 2,  high: 6,  stores: ["Target","Walmart"] },
+  { match: /beverage|soda|juice|water|coffee|tea/, low: 2, high: 6, stores: ["Walmart","Kroger"] },
+  { match: /bakery|bread|pastry/,        low: 3,  high: 8,  stores: ["Kroger","Local bakery"] },
+  { match: /cereal|breakfast/,           low: 3,  high: 7,  stores: ["Target","Walmart"] },
+  { match: /pasta|rice|noodle|grain/,    low: 2,  high: 6,  stores: ["Walmart","Kroger"] },
+  { match: /sauce|condiment|spread|dressing/, low: 3, high: 8, stores: ["Kroger","Walmart"] },
+  { match: /cosmetic|beauty|skincare|hygiene/, low: 8, high: 30, stores: ["Ulta","Sephora","Target"] },
+  { match: /clean|detergent|household/,  low: 4,  high: 14, stores: ["Target","Walmart"] },
+];
+
+// Uses Open Food Facts category tags (e.g. "en:snacks") when available to pick
+// a realistic price band for that kind of product; falls back to a generic
+// grocery range, then to the old name-hash estimate for non-food barcodes.
+function estimateFromCategories(categoriesTags, name, barcode){
+  const tags = (categoriesTags || []).join(' ').toLowerCase();
+  const seed = hashStr(name + (barcode||''));
+  for(const band of CATEGORY_PRICE_BANDS){
+    if(band.match.test(tags)){
+      const spread = band.high - band.low;
+      const low = band.low + (seed % Math.max(1, Math.round(spread*0.3)));
+      const high = band.high - (Math.floor(seed/7) % Math.max(1, Math.round(spread*0.3)));
+      return { low, high: Math.max(high, low+1), stores: band.stores };
+    }
+  }
+  // No category match — still food (found via OFF), so use a generic grocery
+  // band instead of the wide 12–72 name-hash range meant for non-food items.
+  const low = 2 + (seed % 8);
+  const high = low + 2 + (Math.floor(seed/5) % 6);
+  const s1 = STORE_POOL[seed % STORE_POOL.length];
+  return { low, high, stores: [s1, "Walmart"].filter((v,i,a)=>a.indexOf(v)===i) };
+}
+
+// Builds the most specific name available from an Open Food Facts product,
+// preferring localized/generic fields over a bare brand fallback, and
+// appending brand + quantity when they're not already part of the name.
+function buildOFFName(p){
+  const base = p.product_name || p.product_name_en || p.generic_name || p.generic_name_en || '';
+  if(!base) return p.brands ? `${p.brands} product` : '';
+  const brand = (p.brands || '').split(',')[0].trim();
+  let name = base.trim();
+  if(brand && !name.toLowerCase().includes(brand.toLowerCase())){
+    name = `${brand} ${name}`;
+  }
+  if(p.quantity && !name.includes(p.quantity)){
+    name = `${name}, ${p.quantity}`;
+  }
+  return name;
+}
+
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function genCode(){
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let c=''; for(let i=0;i<5;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+  return c;
+}
+function esc(s){ return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+// ---------------- storage helpers ----------------
+async function getJSON(key, shared){
+  try{
+    const r = await window.storage.get(key, shared);
+    return r ? JSON.parse(r.value) : null;
+  }catch(e){ return null; }
+}
+async function setJSON(key, value, shared){
+  try{ await window.storage.set(key, JSON.stringify(value), shared); }
+  catch(e){ console.error('storage set failed', key, e); }
+}
+
+async function loadProfile(){
+  state.profile = await getJSON('profile', false);
+}
+async function saveProfile(){
+  await setJSON('profile', state.profile, false);
+}
+
+async function loadHousehold(){
+  const code = state.profile.householdCode;
+  state.members = (await getJSON(`hh:${code}:members`, true)) || [];
+  state.items = (await getJSON(`hh:${code}:items`, true)) || [];
+}
+async function saveMembers(){
+  await setJSON(`hh:${state.profile.householdCode}:members`, state.members, true);
+}
+async function saveItems(){
+  await setJSON(`hh:${state.profile.householdCode}:items`, state.items, true);
+}
+
+// ---------------- routing / render ----------------
+async function boot(){
+  await loadProfile();
+  if(state.profile && state.profile.householdCode){
+    await loadHousehold();
+    state.activeMemberId = state.profile.id;
+    renderHome();
+  } else {
+    renderOnboarding();
+  }
+}
+
+function renderOnboarding(mode){
+  mode = mode || 'choose';
+  let inner = '';
+  if(mode === 'choose'){
+    inner = `
+      <div class="stack">
+        <button class="btn btn-gold" id="go-create">Start a new household</button>
+        <div class="divider-or">or</div>
+        <button class="btn btn-ghost" id="go-join">Join with a code</button>
+      </div>`;
+  } else if(mode === 'create'){
+    inner = `
+      <div class="stack">
+        <div class="field">
+          <label>Your name</label>
+          <input id="in-name" placeholder="e.g. Morgan" autocomplete="off">
+        </div>
+        <button class="btn btn-primary" id="do-create">Create household</button>
+        <button class="btn btn-ghost" id="back-choose">Back</button>
+      </div>`;
+  } else if(mode === 'join'){
+    inner = `
+      <div class="stack">
+        <div class="field">
+          <label>Household code</label>
+          <input id="in-code" placeholder="e.g. 7GQK2" autocomplete="off" style="text-transform:uppercase;letter-spacing:0.1em;">
+        </div>
+        <div class="field">
+          <label>Your name</label>
+          <input id="in-name" placeholder="e.g. Morgan" autocomplete="off">
+        </div>
+        <button class="btn btn-primary" id="do-join">Join household</button>
+        <button class="btn btn-ghost" id="back-choose">Back</button>
+      </div>`;
+  }
+
+  root.innerHTML = `
+    <div class="center-screen">
+      <div style="width:100%;max-width:420px;">
+        <div style="text-align:center;margin-bottom:24px;">
+          <div class="eyebrow" style="color:var(--gold);">Family gift registry</div>
+          <h1 style="font-size:30px;margin-top:6px;">Ledger</h1>
+          <p style="color:var(--ink-soft);font-size:14px;margin-top:8px;">
+            Scan things you spot in stores. Family sees the list.<br>No one sees who's buying what.
+          </p>
+        </div>
+        <div class="card">${inner}</div>
+      </div>
+    </div>`;
+
+  if(mode==='choose'){
+    document.getElementById('go-create').onclick = ()=>renderOnboarding('create');
+    document.getElementById('go-join').onclick = ()=>renderOnboarding('join');
+  }
+  if(mode==='create'){
+    document.getElementById('back-choose').onclick = ()=>renderOnboarding('choose');
+    document.getElementById('do-create').onclick = async ()=>{
+      const name = document.getElementById('in-name').value.trim();
+      if(!name){ shake('in-name'); return; }
+      const code = genCode();
+      const myId = uid();
+      state.profile = { name, id: myId, householdCode: code };
+      await saveProfile();
+      state.members = [{id: myId, name}];
+      await saveMembers();
+      await setJSON(`hh:${code}:meta`, {createdAt: Date.now()}, true);
+      state.items = [];
+      await saveItems();
+      state.activeMemberId = myId;
+      renderHome();
+    };
+  }
+  if(mode==='join'){
+    document.getElementById('back-choose').onclick = ()=>renderOnboarding('choose');
+    document.getElementById('do-join').onclick = async ()=>{
+      const codeRaw = document.getElementById('in-code').value.trim().toUpperCase();
+      const name = document.getElementById('in-name').value.trim();
+      if(!codeRaw){ shake('in-code'); return; }
+      if(!name){ shake('in-name'); return; }
+      const meta = await getJSON(`hh:${codeRaw}:meta`, true);
+      if(!meta){
+        alert("Couldn't find a household with that code. Double check it with whoever invited you.");
+        return;
+      }
+      const myId = uid();
+      state.profile = { name, id: myId, householdCode: codeRaw };
+      await saveProfile();
+      const members = (await getJSON(`hh:${codeRaw}:members`, true)) || [];
+      if(!members.find(m=>m.name.toLowerCase()===name.toLowerCase())){
+        members.push({id: myId, name});
+      }
+      state.members = members;
+      await saveMembers();
+      state.items = (await getJSON(`hh:${codeRaw}:items`, true)) || [];
+      state.activeMemberId = myId;
+      renderHome();
+    };
+  }
+}
+
+function shake(id){
+  const el = document.getElementById(id);
+  el.style.borderColor = 'var(--berry)';
+  setTimeout(()=>{ el.style.borderColor=''; }, 900);
+  el.focus();
+}
+
+async function refreshHome(){
+  await loadHousehold();
+  renderHome();
+}
+
+function renderHome(){
+  const code = state.profile.householdCode;
+  const activeMember = state.members.find(m=>m.id===state.activeMemberId) || state.members[0];
+  const isOwnList = activeMember && activeMember.id === state.profile.id;
+
+  const itemsForActive = state.items
+    .filter(it => it.ownerId === (activeMember ? activeMember.id : null))
+    .sort((a,b)=>b.addedAt-a.addedAt);
+
+  const memberChips = state.members.map(m => `
+    <button class="member-chip ${m.id===activeMember?.id?'active':''}" data-mid="${m.id}">
+      ${m.id===state.profile.id ? 'You' : esc(m.name)}
+    </button>`).join('');
+
+  const listHTML = itemsForActive.length ? itemsForActive.map(it => renderTag(it, isOwnList)).join('') : `
+    <div class="empty">
+      <span class="glyph">🎁</span>
+      ${isOwnList
+        ? "Nothing on your list yet. Scan something you'd like!"
+        : `${esc(activeMember?.name || '')} hasn't added anything yet.`}
+    </div>`;
+
+  root.innerHTML = `
+    <div class="topbar">
+      <div class="eyebrow">Household</div>
+      <h1>${esc(state.profile.name)}'s Ledger</h1>
+      <div class="code-pill">
+        Invite code: <b>${esc(code)}</b>
+        <button id="copy-code">copy</button>
+      </div>
+    </div>
+
+    <div class="member-rail" id="member-rail">${memberChips}</div>
+
+    <div class="section-head">
+      <h2>${isOwnList ? 'Your list' : `${esc(activeMember?.name||'')}'s list`}</h2>
+      <span>${itemsForActive.length} item${itemsForActive.length===1?'':'s'}</span>
+    </div>
+
+    <div class="tag-list" id="tag-list">${listHTML}</div>
+
+    <div class="fab-row">
+      ${isOwnList ? `
+        <button class="fab btn-gold" id="fab-scan">📷 Scan barcode</button>
+        <button class="fab btn-ghost" id="fab-manual">+ Add manually</button>
+      ` : `
+        <button class="fab btn-ghost" id="fab-invite">Invite someone else</button>
+      `}
+    </div>
+  `;
+
+  document.getElementById('copy-code').onclick = ()=>{
+    navigator.clipboard?.writeText(code);
+    const b = document.getElementById('copy-code');
+    b.textContent='copied'; setTimeout(()=>b.textContent='copy',1200);
+  };
+  document.querySelectorAll('#member-rail .member-chip').forEach(btn=>{
+    btn.onclick = ()=>{ state.activeMemberId = btn.dataset.mid; renderHome(); };
+  });
+  if(isOwnList){
+    document.getElementById('fab-scan').onclick = openScanModal;
+    document.getElementById('fab-manual').onclick = ()=>openManualModal();
+  } else {
+    document.getElementById('fab-invite').onclick = openInviteModal;
+  }
+  document.querySelectorAll('[data-claim]').forEach(btn=>{
+    btn.onclick = ()=>toggleClaim(btn.dataset.claim);
+  });
+  document.querySelectorAll('[data-delete]').forEach(btn=>{
+    btn.onclick = ()=>deleteItem(btn.dataset.delete);
+  });
+}
+
+function renderTag(it, isOwnList){
+  const reserved = !!it.reservedBy;
+  // Owner never sees reservation status on their own list (keeps the surprise).
+  const showReserveState = !isOwnList;
+  const reservedByMe = it.reservedBy === state.profile.id;
+
+  let actionsHTML = '';
+  if(showReserveState){
+    if(!reserved){
+      actionsHTML = `<div class="tag-actions"><button class="claim" data-claim="${it.id}">I'll get this</button></div>`;
+    } else if(reservedByMe){
+      actionsHTML = `<div class="tag-actions"><button class="unclaim" data-claim="${it.id}">Un-claim</button></div>`;
+    } else {
+      actionsHTML = `<div class="reserved-note">🔒 Someone's already got this</div>`;
+    }
+  } else {
+    actionsHTML = `<div class="tag-actions"><button data-delete="${it.id}">Remove from list</button></div>`;
+  }
+
+  return `
+    <div class="tag ${reserved && showReserveState ? 'reserved':''}">
+      <div class="tag-top">
+        <div class="tag-name">${esc(it.name)}</div>
+        <div class="tag-price">$${it.priceLow}–$${it.priceHigh}</div>
+      </div>
+      <div class="tag-stores"><b>Try:</b> ${it.stores.map(esc).join(', ')}</div>
+      <div class="tag-meta">${it.barcode ? 'Scanned · ' : 'Added manually · '}${timeAgo(it.addedAt)}</div>
+      ${actionsHTML}
+    </div>`;
+}
+
+function timeAgo(ts){
+  const mins = Math.max(1, Math.round((Date.now()-ts)/60000));
+  if(mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins/60);
+  if(hrs < 24) return `${hrs}h ago`;
+  return `${Math.round(hrs/24)}d ago`;
+}
+
+async function toggleClaim(itemId){
+  const it = state.items.find(i=>i.id===itemId);
+  if(!it) return;
+  if(it.reservedBy === state.profile.id){
+    it.reservedBy = null; it.reservedByName = null;
+  } else if(!it.reservedBy){
+    it.reservedBy = state.profile.id; it.reservedByName = state.profile.name;
+  }
+  await saveItems();
+  renderHome();
+}
+
+async function deleteItem(itemId){
+  state.items = state.items.filter(i=>i.id!==itemId);
+  await saveItems();
+  renderHome();
+}
+
+// ---------------- Add item modals ----------------
+function openManualModal(prefill){
+  prefill = prefill || {};
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="position:relative;">
+      <button class="close-x">✕</button>
+      <h3>${prefill.name ? 'Confirm item' : 'Add item'}</h3>
+      <div class="sub">${
+        prefill.source === 'real' ? `Found via live lookup (${esc(prefill.sourceLabel||'product database')}) — edit anything below.` :
+        prefill.name ? 'We matched this from the barcode — edit anything below.' :
+        "Couldn't find this barcode in any product database — enter details manually."
+      }</div>
+      <div class="stack">
+        <div class="field">
+          <label>Item name</label>
+          <input id="m-name" value="${esc(prefill.name||'')}" placeholder="e.g. Wireless headphones">
+        </div>
+        <div class="field">
+          <label>Estimated price range ($)</label>
+          <div style="display:flex;gap:10px;">
+            <input id="m-low" type="number" value="${prefill.low ?? ''}" placeholder="Low" style="flex:1;">
+            <input id="m-high" type="number" value="${prefill.high ?? ''}" placeholder="High" style="flex:1;">
+          </div>
+        </div>
+        <div class="field">
+          <label>Where to find it</label>
+          <input id="m-stores" value="${(prefill.stores||[]).join(', ')}" placeholder="e.g. Target, Amazon">
+        </div>
+        <div class="demo-flag">${
+          prefill.source === 'real'
+            ? `Name confirmed via ${esc(prefill.sourceLabel||'live lookup')}. Price range and stores are still estimated — no free API gives live retail pricing.`
+            : "No live match found for this barcode — everything below is estimated, not real."
+        }</div>
+        <button class="btn btn-primary" id="m-save">Add to my list</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('.close-x').onclick = ()=>overlay.remove();
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+
+  overlay.querySelector('#m-save').onclick = async ()=>{
+    const name = overlay.querySelector('#m-name').value.trim();
+    if(!name){ shakeIn(overlay.querySelector('#m-name')); return; }
+    let low = parseInt(overlay.querySelector('#m-low').value, 10);
+    let high = parseInt(overlay.querySelector('#m-high').value, 10);
+    let stores = overlay.querySelector('#m-stores').value.split(',').map(s=>s.trim()).filter(Boolean);
+    if(isNaN(low) || isNaN(high) || !stores.length){
+      const est = estimateFromName(name, prefill.barcode);
+      if(isNaN(low)) low = est.low;
+      if(isNaN(high)) high = est.high;
+      if(!stores.length) stores = est.stores;
+    }
+    const item = {
+      id: uid(),
+      ownerId: state.profile.id,
+      ownerName: state.profile.name,
+      name,
+      barcode: prefill.barcode || null,
+      priceLow: low, priceHigh: high,
+      stores,
+      addedAt: Date.now(),
+      reservedBy: null, reservedByName: null,
+    };
+    state.items.push(item);
+    await saveItems();
+    overlay.remove();
+    renderHome();
+  };
+}
+function shakeIn(el){
+  el.style.borderColor = 'var(--berry)';
+  setTimeout(()=>{ el.style.borderColor=''; }, 900);
+  el.focus();
+}
+
+function openInviteModal(){
+  const code = state.profile.householdCode;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="position:relative;">
+      <button class="close-x">✕</button>
+      <h3>Invite to ${esc(state.profile.name)}'s household</h3>
+      <div class="sub">Share this code — they tap "Join with a code" and enter it.</div>
+      <div class="card" style="text-align:center;">
+        <div class="eyebrow">Household code</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:32px;letter-spacing:0.15em;font-weight:600;color:var(--pine);margin-top:6px;">${esc(code)}</div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('.close-x').onclick = ()=>overlay.remove();
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+}
+
+// ---------------- Barcode scan modal ----------------
+function openScanModal(){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="position:relative;">
+      <button class="close-x">✕</button>
+      <h3>Scan a barcode</h3>
+      <div class="sub">Point your camera at the barcode. Works best in good light.</div>
+      <div id="qr-reader"></div>
+      <div class="scan-status" id="scan-status">Starting camera…</div>
+      <button class="btn btn-ghost" id="cancel-scan" style="margin-top:10px;">Enter manually instead</button>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const close = () => {
+    stopScanner();
+    overlay.remove();
+  };
+  overlay.querySelector('.close-x').onclick = close;
+  overlay.querySelector('#cancel-scan').onclick = () => { close(); openManualModal(); };
+
+  const statusEl = overlay.querySelector('#scan-status');
+
+  if(typeof Html5Qrcode === 'undefined'){
+    statusEl.textContent = "Camera scanner failed to load — you can still add items manually.";
+    return;
+  }
+
+  const config = {
+    fps: 10,
+    qrbox: { width: 260, height: 140 },
+    formatsToSupport: [
+      Html5QrcodeSupportedFormats.EAN_13,
+      Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.UPC_A,
+      Html5QrcodeSupportedFormats.UPC_E,
+      Html5QrcodeSupportedFormats.CODE_128,
+      Html5QrcodeSupportedFormats.QR_CODE,
+    ],
+  };
+
+  state.scanner = new Html5Qrcode("qr-reader");
+  state.scanner.start(
+    { facingMode: "environment" },
+    config,
+    async (decodedText) => {
+      stopScanner();
+      // Keep the modal open and show a lookup status instead of closing immediately —
+      // the real product lookup is a network call and may take a moment.
+      overlay.querySelector('#qr-reader').style.display = 'none';
+      statusEl.textContent = `Found barcode ${decodedText} — looking up product…`;
+      const result = await lookupBarcode(decodedText);
+      overlay.remove();
+      openManualModal(result);
+    },
+    () => { /* per-frame no-match, ignore */ }
+  ).then(()=>{
+    statusEl.textContent = "Looking for a barcode…";
+  }).catch((err)=>{
+    statusEl.textContent = "Couldn't access the camera — check permissions, or add manually.";
+  });
+}
+
+// ---------------- Real barcode lookup ----------------
+// Primary: Open Food Facts — free, keyless, and built for client-side/browser use,
+// so it reliably allows direct requests from a webpage (unlike many product APIs).
+// Covers most grocery/food/household barcodes with real names + photos, but has
+// no pricing data. Secondary: UPCitemdb trial (broader catalog incl. price history,
+// but may block direct browser requests — wrapped so it fails silently if so).
+// Final fallback: local demo catalog, then a labeled estimate.
+async function lookupBarcode(code){
+  // --- Try Open Food Facts first ---
+  try {
+    const resp = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`);
+    if(resp.ok){
+      const data = await resp.json();
+      if(data && data.status === 1 && data.product){
+        const p = data.product;
+        const name = buildOFFName(p);
+        if(name){
+          const est = estimateFromCategories(p.categories_tags, name, code);
+          return {
+            name,
+            low: est.low,
+            high: est.high,
+            stores: est.stores,
+            barcode: code,
+            source: 'real',
+            sourceLabel: 'Open Food Facts',
+          };
+        }
+      }
+    }
+  } catch(e){
+    console.warn('Open Food Facts lookup failed:', e);
+  }
+
+  // --- Try UPCitemdb second (may be CORS-blocked from a browser; fails silently) ---
+  try {
+    const resp = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${encodeURIComponent(code)}`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if(resp.ok){
+      const data = await resp.json();
+      const item = data && data.items && data.items[0];
+      if(item && item.title){
+        const low = Number(item.lowest_recorded_price) || null;
+        const high = Number(item.highest_recorded_price) || null;
+        const stores = (item.offers || [])
+          .map(o => o.domain)
+          .filter(Boolean)
+          .filter((v,i,a)=>a.indexOf(v)===i)
+          .slice(0,3);
+        const est = estimateFromName(item.title, code);
+        return {
+          name: item.title,
+          low: low || est.low,
+          high: high || est.high,
+          stores: stores.length ? stores : est.stores,
+          barcode: code,
+          source: 'real',
+          sourceLabel: 'UPCitemdb',
+        };
+      }
+    }
+  } catch(e){
+    console.warn('UPCitemdb lookup failed, falling back:', e);
+  }
+
+  // --- Local fallbacks ---
+  const demo = DEMO_CATALOG[code];
+  if(demo){
+    return { name: demo.name, low: demo.low, high: demo.high, stores: demo.stores, barcode: code, source: 'demo' };
+  }
+  const est = estimateFromName(code, code);
+  return { name: '', low: est.low, high: est.high, stores: est.stores, barcode: code, source: 'estimate' };
+}
+
+function stopScanner(){
+  if(state.scanner){
+    state.scanner.stop().then(()=>state.scanner.clear()).catch(()=>{});
+    state.scanner = null;
+  }
+}
+
+boot();
+</script>
+</body>
+</html>
